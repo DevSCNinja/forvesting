@@ -1,0 +1,12 @@
+[programs.localnet]
+vesting_schedule = "APxgpqd2EkAzJBBymwss5k7Wp1DSmjjggVx5V6EQc6cR"
+
+[registry]
+url = "https://anchor.projectserum.com"
+
+[provider]
+cluster = "localnet"
+wallet = "./keypair.json"
+
+[scripts]
+test = "ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
