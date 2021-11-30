@@ -1,6 +1,5 @@
 use anchor_lang::prelude::Pubkey;
 
-#[derive(Debug)]
 pub struct VestingPdaAddress {
     pub key: Pubkey,
     pub seed: u8,

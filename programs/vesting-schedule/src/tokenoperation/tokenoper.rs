@@ -1,8 +1,7 @@
-use crate::pda::{self};
+use crate::utils;
+use crate::utils::pda::{self};
 use anchor_lang::{prelude::AccountInfo, CpiContext};
 use anchor_spl::token::{self, Transfer};
-
-pub const TOKEN_MINT_TAG: &str = "tmt";
 
 #[allow(clippy::too_many_arguments)]
 pub fn vesting_transfer<'info>(
@@ -16,7 +15,8 @@ pub fn vesting_transfer<'info>(
 ) {
     let from_vault_seed: u8 = from_vault_authority_seed;
     let from_vault_authority_bump = vec![from_vault_seed];
-    let from_vault_authority_pda_seeds = pda::make_vesting_pda_seeds(owner.key, TOKEN_MINT_TAG);
+    let from_vault_authority_pda_seeds =
+        pda::make_vesting_pda_seeds(owner.key, utils::utils::TOKEN_MINT_TAG);
     let seeds = [
         from_vault_authority_pda_seeds[0].as_ref(),
         from_vault_authority_pda_seeds[1].as_ref(),
