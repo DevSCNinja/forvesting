@@ -10,7 +10,7 @@ build:
 	anchor build -p vesting_schedule --provider.cluster $(DEPLOYMENT_CLUSTER) --provider.wallet ./keypair.json
 
 deploy-new:
-	anchor deploy -p vesting_schedule --provider.cluster $(DEPLOYMENT_CLUSTER) --provider.wallet ./keypair.json
+	anchor deploy
 
 deploy:
 	echo $(VESTING_SCHEDULE_PROGRAM_ID)

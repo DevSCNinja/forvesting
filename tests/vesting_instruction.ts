@@ -2,6 +2,7 @@ import { PublicKey, Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import * as serumCmn from "@project-serum/common";
 import * as anchor from '@project-serum/anchor';
 import { VestingSchedule } from '../target/types/vesting_schedule';
+import { TokenInstructions } from "@project-serum/serum";
 import { Program } from '@project-serum/anchor';
 import { createMint, createTokenAccount, setUpAta } from './utils';
 import { sleep } from '@project-serum/common';
@@ -46,8 +47,6 @@ export async function initialize(
     vesting_schedule: PublicKey,
     vesting_data: Keypair,
     vesting_vault: PublicKey,
-    token_program: PublicKey,
-    system_program: PublicKey,
 ) {
     await program.rpc.initialize(
         new anchor.BN(current_time), {
@@ -56,8 +55,8 @@ export async function initialize(
             vestingData: vesting_data.publicKey,
             vestingSchedule: vesting_schedule,
             vestingVault: vesting_vault,
-            tokenProgram: token_program,
-            systemProgram: system_program,
+            tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
+            systemProgram: anchor.web3.SystemProgram.programId,
         },
         signers: [vesting_data],
     });
@@ -70,8 +69,6 @@ export async function claim(
     vesting_data: Keypair,
     claim_account: PublicKey,
     claim_user_ata: PublicKey,
-    token_program: PublicKey,
-    system_program: PublicKey,
 ) {
 
     const auth = await program.account.vestingData.fetch(vesting_data.publicKey);
@@ -86,8 +83,8 @@ export async function claim(
         claimUserAta: claim_user_ata,
         vestingVault: auth.vestingVault,
         vestingVaultAuthority: auth.vestingVaultAuthority,
-        tokenProgram: token_program,
-        systemProgram: system_program,
+        tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
       },
     });
 }
@@ -106,7 +103,6 @@ export async function addUser(
     unlock_period: number,
     planned_tokens: number,
     vesting_schedule: PublicKey,
-    system_program: PublicKey,
 ) {
     await program.rpc.addUser(
         new anchor.BN(unlock_percent),
@@ -116,7 +112,7 @@ export async function addUser(
         {
             accounts: {
                 vestingSchedule: vesting_schedule,
-                systemProgram: system_program,
+                systemProgram: anchor.web3.SystemProgram.programId,
             },
         }
     );
@@ -125,14 +121,13 @@ export async function addUser(
 export async function removeUser(
     index: number,
     vesting_schedule: PublicKey,
-    system_program: PublicKey,
 ) {
     await program.rpc.removeUser(
         new anchor.BN(index),
         {
             accounts: {
                 vestingSchedule: vesting_schedule,
-                systemProgram: system_program,
+                systemProgram: anchor.web3.SystemProgram.programId,
             },
         }
     );

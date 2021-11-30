@@ -10,6 +10,6 @@ solana airdrop 5000 BSKmmWSyV42Pw3AwZHRFyiHpcBpQ3FyCYeHVecUanb6y
 mkdir -p ./target/deploy/
 cp vesting_schedule-keypair.json ./target/deploy/
 yarn install
-anchor build
-anchor deploy
-anchor test
+make build
+make deploy-new
+npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts

@@ -1,27 +1,22 @@
 import * as anchor from '@project-serum/anchor';
 import { Program } from '@project-serum/anchor';
 import { TokenInstructions } from "@project-serum/serum";
-import { mintTo, decimalToU64 } from './utils';
+import { mintTo, decimalToU64, getTokenAccount } from './utils';
 import { initialize, getInitilizeParameter, claim, getUserAta, addUser, removeUser } from './vesting_instruction';
 import { VestingSchedule } from '../target/types/vesting_schedule';
 import { Keypair } from "@solana/web3.js";
-const serumCmn = require("@project-serum/common");
 const { SystemProgram } = anchor.web3;
 
 describe('VestingSchedule', () => {
 
   // Configure the client to use the local cluster.
-
   const provider = anchor.Provider.local();
+  const assert = require('assert');
+  const program = anchor.workspace.VestingSchedule as Program<VestingSchedule>;
 
   anchor.setProvider(provider);
 
-  const assert = require('assert');
-
-  const program = anchor.workspace.VestingSchedule as Program<VestingSchedule>;
-
   it('Is initialized!', async () => {
-    // Add your test here.
     const publish_time = '2021.8.17';
     const mint_token_amount = 1_000_000.0;
     const current_time = new Date(publish_time).getTime() / 1000;
@@ -33,8 +28,6 @@ describe('VestingSchedule', () => {
       vesting_schedule,
       vesting_data,
       vesting_vault_hbb,
-      TokenInstructions.TOKEN_PROGRAM_ID,
-      SystemProgram.programId,
     );
 
     const initializeToken = await getTokenAccount(provider, vesting_vault_hbb);
@@ -48,7 +41,7 @@ describe('VestingSchedule', () => {
     const mintToken = await getTokenAccount(provider, vesting_vault_hbb);
     assert.ok(mintToken.amount.eq(new anchor.BN(1_000_000_000_000)));
   });
-  
+
   it('Add User Completed', async () => {
 
     // Add 2 Clients
@@ -71,37 +64,25 @@ describe('VestingSchedule', () => {
       vesting_schedule,
       vesting_data,
       vesting_vault_hbb,
-      TokenInstructions.TOKEN_PROGRAM_ID,
-      SystemProgram.programId,
     );
 
     await mintTo(provider, mint_hbb, vesting_vault_hbb, decimalToU64(mint_token_amount));
 
-    try {
-      await addUser(
-        15,
-        user1.publicKey,
-        12,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      15,
+      user1.publicKey,
+      12,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
-    try {
-      await addUser(
-        20,
-        user2.publicKey,
-        8,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      20,
+      user2.publicKey,
+      8,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
     const get_active_users = await program.account.vestingSchedule.fetch(vesting_schedule);
     assert.ok(get_active_users.len, 2);
@@ -109,35 +90,23 @@ describe('VestingSchedule', () => {
     const user_ata1 = await getUserAta(user1.secretKey, provider, mint_hbb);
     const user_ata2 = await getUserAta(user2.secretKey, provider, mint_hbb);
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
-    try {
-      await claim(
-        1,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user2.publicKey,
-        user_ata2,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      1,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user2.publicKey,
+      user_ata2,
+    );
 
 
     let claim_time = new Date().getTime() / 1000;
@@ -181,76 +150,50 @@ describe('VestingSchedule', () => {
       vesting_schedule,
       vesting_data,
       vesting_vault_hbb,
-      TokenInstructions.TOKEN_PROGRAM_ID,
-      SystemProgram.programId,
     );
 
     await mintTo(provider, mint_hbb, vesting_vault_hbb, decimalToU64(mint_token_amount));
 
-    try {
-      await addUser(
-        15,
-        user1.publicKey,
-        12,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      15,
+      user1.publicKey,
+      12,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
-    try {
-      await addUser(
-        20,
-        user2.publicKey,
-        8,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      20,
+      user2.publicKey,
+      8,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
-    await removeUser(0, vesting_schedule,SystemProgram.programId);
-
+    await removeUser(0, vesting_schedule);
     let get_active_users = await program.account.vestingSchedule.fetch(vesting_schedule);
     assert.ok(get_active_users.len, 1);
 
     const user_ata1 = await getUserAta(user1.secretKey, provider, mint_hbb);
     const user_ata2 = await getUserAta(user2.secretKey, provider, mint_hbb);
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
-    try {
-      await claim(
-        1,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user2.publicKey,
-        user_ata2,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
-
+    await claim(
+      1,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user2.publicKey,
+      user_ata2,
+    );
 
     let claim_time = new Date().getTime() / 1000;
     let mint_time = new Date(publish_time).getTime() / 1000;
@@ -266,51 +209,34 @@ describe('VestingSchedule', () => {
     let token_amount_account2 = await getTokenAccount(provider, user_ata2);
     assert.ok(token_amount_account2.amount.eq(new anchor.BN(calc_user_claim_token2)));
 
-    try {
-      await addUser(
-        15,
-        user1.publicKey,
-        12,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      15,
+      user1.publicKey,
+      12,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
     get_active_users = await program.account.vestingSchedule.fetch(vesting_schedule);
     assert.ok(get_active_users.len, 2);
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
-    try {
-      await claim(
-        1,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user2.publicKey,
-        user_ata2,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      1,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user2.publicKey,
+      user_ata2,
+    );
 
     claim_time = new Date().getTime() / 1000;
     delay_minutes = Math.floor((claim_time - mint_time) / 60);
@@ -350,37 +276,25 @@ describe('VestingSchedule', () => {
       vesting_schedule,
       vesting_data,
       vesting_vault_hbb,
-      TokenInstructions.TOKEN_PROGRAM_ID,
-      SystemProgram.programId,
     );
 
     await mintTo(provider, mint_hbb, vesting_vault_hbb, decimalToU64(mint_token_amount));
 
-    try {
-      await addUser(
-        15,
-        user1.publicKey,
-        12,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      15,
+      user1.publicKey,
+      12,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
-    try {
-      await addUser(
-        20,
-        user2.publicKey,
-        8,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      20,
+      user2.publicKey,
+      8,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
     const user_ata1 = await getUserAta(user1.secretKey, provider, mint_hbb);
     const user_ata2 = await getUserAta(user2.secretKey, provider, mint_hbb);
@@ -388,35 +302,23 @@ describe('VestingSchedule', () => {
     let get_active_users = await program.account.vestingSchedule.fetch(vesting_schedule);
     assert.ok(get_active_users.len, 2);
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
-    try {
-      await claim(
-        1,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user2.publicKey,
-        user_ata2,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      1,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user2.publicKey,
+      user_ata2,
+    );
 
 
     let claim_time = new Date().getTime() / 1000;
@@ -439,35 +341,23 @@ describe('VestingSchedule', () => {
     let token_amount_vault_account = await getTokenAccount(provider, vesting_vault_hbb);
     assert.ok(token_amount_vault_account.amount.eq(new anchor.BN(1_000_000_000_000 - calc_user_claim_token1 - calc_user_claim_token2)));
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
-    try {
-      await claim(
-        1,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user2.publicKey,
-        user_ata2,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      1,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user2.publicKey,
+      user_ata2,
+    );
 
     assert.ok(token_amount_account1.amount.eq(new anchor.BN(calc_user_claim_token1)));
     assert.ok(token_amount_account2.amount.eq(new anchor.BN(calc_user_claim_token2)));
@@ -497,37 +387,25 @@ describe('VestingSchedule', () => {
       vesting_schedule,
       vesting_data,
       vesting_vault_hbb,
-      TokenInstructions.TOKEN_PROGRAM_ID,
-      SystemProgram.programId,
     );
 
     await mintTo(provider, mint_hbb, vesting_vault_hbb, decimalToU64(mint_token_amount));
 
-    try {
-      await addUser(
-        15,
-        user1.publicKey,
-        12,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      15,
+      user1.publicKey,
+      12,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
-    try {
-      await addUser(
-        20,
-        user2.publicKey,
-        8,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      20,
+      user2.publicKey,
+      8,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
     const user_ata1 = await getUserAta(user1.secretKey, provider, mint_hbb);
     const user_ata2 = await getUserAta(user2.secretKey, provider, mint_hbb);
@@ -535,35 +413,23 @@ describe('VestingSchedule', () => {
     let get_active_users = await program.account.vestingSchedule.fetch(vesting_schedule);
     assert.ok(get_active_users.len, 2);
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
-    try {
-      await claim(
-        1,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user2.publicKey,
-        user_ata2,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      1,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user2.publicKey,
+      user_ata2,
+    );
 
     let token_amount_account1 = await getTokenAccount(provider, user_ata1);
     assert.ok(token_amount_account1.amount.eq(new anchor.BN(1_000_000_000)));
@@ -571,35 +437,23 @@ describe('VestingSchedule', () => {
     let token_amount_account2 = await getTokenAccount(provider, user_ata2);
     assert.ok(token_amount_account2.amount.eq(new anchor.BN(1_000_000_000)));
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
-    try {
-      await claim(
-        1,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user2.publicKey,
-        user_ata2,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      1,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user2.publicKey,
+      user_ata2,
+    );
 
     assert.ok(token_amount_account1.amount.eq(new anchor.BN(1_000_000_000)));
     assert.ok(token_amount_account2.amount.eq(new anchor.BN(1_000_000_000)));
@@ -627,37 +481,25 @@ describe('VestingSchedule', () => {
       vesting_schedule,
       vesting_data,
       vesting_vault_hbb,
-      TokenInstructions.TOKEN_PROGRAM_ID,
-      SystemProgram.programId,
     );
 
     await mintTo(provider, mint_hbb, vesting_vault_hbb, decimalToU64(mint_token_amount));
 
-    try {
-      await addUser(
-        15,
-        user1.publicKey,
-        12,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      15,
+      user1.publicKey,
+      12,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
-    try {
-      await addUser(
-        20,
-        user2.publicKey,
-        8,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      20,
+      user2.publicKey,
+      8,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
     const user_ata1 = await getUserAta(user1.secretKey, provider, mint_hbb);
     const user_ata2 = await getUserAta(user2.secretKey, provider, mint_hbb);
@@ -665,35 +507,23 @@ describe('VestingSchedule', () => {
     let get_active_users = await program.account.vestingSchedule.fetch(vesting_schedule);
     assert.ok(get_active_users.len, 2);
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
-    try {
-      await claim(
-        1,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user2.publicKey,
-        user_ata2,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      1,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user2.publicKey,
+      user_ata2,
+    );
 
     let token_amount_account1 = await getTokenAccount(provider, user_ata1);
     assert.ok(token_amount_account1.amount.eq(new anchor.BN(0)));
@@ -701,35 +531,23 @@ describe('VestingSchedule', () => {
     let token_amount_account2 = await getTokenAccount(provider, user_ata2);
     assert.ok(token_amount_account2.amount.eq(new anchor.BN(0)));
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
-    try {
-      await claim(
-        1,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user2.publicKey,
-        user_ata2,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      1,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user2.publicKey,
+      user_ata2,
+    );
 
     assert.ok(token_amount_account1.amount.eq(new anchor.BN(0)));
     assert.ok(token_amount_account2.amount.eq(new anchor.BN(0)));
@@ -760,96 +578,65 @@ describe('VestingSchedule', () => {
       vesting_schedule,
       vesting_data,
       vesting_vault_hbb,
-      TokenInstructions.TOKEN_PROGRAM_ID,
-      SystemProgram.programId,
     );
 
     await mintTo(provider, mint_hbb, vesting_vault_hbb, decimalToU64(mint_token_amount));
 
-    try {
-      await addUser(
-        100,
-        user1.publicKey,
-        0,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      100,
+      user1.publicKey,
+      0,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
     const user_ata1 = await getUserAta(user1.secretKey, provider, mint_hbb);
 
     let get_active_users = await program.account.vestingSchedule.fetch(vesting_schedule);
     assert.ok(get_active_users.len, 1);
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
     let token_amount_account1 = await getTokenAccount(provider, user_ata1);
     assert.ok(token_amount_account1.amount.eq(new anchor.BN(1_000_000_000)));
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
     assert.ok(token_amount_account1.amount.eq(new anchor.BN(1_000_000_000)));
 
     let user2 = Keypair.generate();
     const user_ata2 = await getUserAta(user2.secretKey, provider, mint_hbb);
-    try {
-      await addUser(
-        100,
-        user2.publicKey,
-        0,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      100,
+      user2.publicKey,
+      0,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
-    await removeUser(1, vesting_schedule,SystemProgram.programId);
-
-    try {
-      await claim(
-        1,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user2.publicKey,
-        user_ata2,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await removeUser(1, vesting_schedule);
+    await claim(
+      1,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user2.publicKey,
+      user_ata2,
+    );
 
     let token_amount_account2 = await getTokenAccount(provider, user_ata2);
     assert.ok(token_amount_account2.amount.eq(new anchor.BN(0)));
@@ -876,67 +663,44 @@ describe('VestingSchedule', () => {
       vesting_schedule,
       vesting_data,
       vesting_vault_hbb,
-      TokenInstructions.TOKEN_PROGRAM_ID,
-      SystemProgram.programId,
     );
 
     await mintTo(provider, mint_hbb, vesting_vault_hbb, decimalToU64(mint_token_amount));
 
-    try {
-      await addUser(
-        20,
-        user1.publicKey,
-        12,
-        1_000_000_000,
-        vesting_schedule,
-        SystemProgram.programId,
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await addUser(
+      20,
+      user1.publicKey,
+      12,
+      1_000_000_000,
+      vesting_schedule,
+    );
 
     const user_ata1 = await getUserAta(user1.secretKey, provider, mint_hbb);
 
     let get_active_users = await program.account.vestingSchedule.fetch(vesting_schedule);
     assert.ok(get_active_users.len, 1);
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
     let token_amount_account1 = await getTokenAccount(provider, user_ata1);
     assert.ok(token_amount_account1.amount.eq(new anchor.BN(1_000_000_000 * 0.2)));
 
-    try {
-      await claim(
-        0,
-        provider.wallet.publicKey,
-        vesting_schedule,
-        vesting_data,
-        user1.publicKey,
-        user_ata1,
-        TokenInstructions.TOKEN_PROGRAM_ID,
-        SystemProgram.programId
-      );
-    } catch(err: any) {
-      assert.ok(false);
-    }
+    await claim(
+      0,
+      provider.wallet.publicKey,
+      vesting_schedule,
+      vesting_data,
+      user1.publicKey,
+      user_ata1,
+    );
 
     assert.ok(token_amount_account1.amount.eq(new anchor.BN(1_000_000_000 * 0.2)));
   });
 });
-
-async function getTokenAccount(provider:any, addr:any) {
-  return await serumCmn.getTokenAccount(provider, addr);
-}

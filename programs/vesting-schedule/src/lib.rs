@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 pub mod handler_add_user;
-pub mod handler_claim;
 pub mod handler_initialize;
 pub mod handler_remove_user;
+pub mod handler_claim;
 pub mod tokenoperation;
 pub mod utils;
 pub mod vesting_operations;
@@ -56,17 +56,6 @@ pub struct Initialize<'info> {
     pub vesting_vault: AccountInfo<'info>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-}
-
-impl<'a, 'b, 'c, 'info> Initialize<'info> {
-    pub fn to_set_authority(&self) -> CpiContext<'a, 'b, 'c, 'info, SetAuthority<'info>> {
-        let cpi_accounts = SetAuthority {
-            account_or_mint: self.vesting_vault.clone(),
-            current_authority: self.admin.clone(),
-        };
-        let cpi_program = self.token_program.to_account_info().clone();
-        CpiContext::new(cpi_program, cpi_accounts)
-    }
 }
 
 #[derive(Accounts)]
@@ -142,11 +131,11 @@ pub struct VestingUser {
 }
 
 impl VestingUser {
-    pub fn new(percent: u8, pubkey: Pubkey, period: u8, total_token: u64) -> Self {
+    pub fn new(percent: u8, pubkey: Pubkey, period: u8, client_planned_token_amount: u64) -> Self {
         Self {
             status: utils::utils::EventStatus::PendingToken as u8,
             user: pubkey,
-            planned_tokens: total_token,
+            planned_tokens: client_planned_token_amount,
             claimed_tokens: 0,
             unlocked_at_tge: percent,
             unlocking_period: period,
@@ -170,7 +159,7 @@ impl Default for VestingSchedule {
     #[cfg(test)]
     #[inline(never)]
     fn default() -> Self {
-        let data: [VestingUser; vesting_operations::MAX_VESTING_USERS] =
+        let data: [VestingUser; utils::utils::MAX_VESTING_USERS] =
             unsafe { std::mem::MaybeUninit::zeroed().assume_init() };
 
         VestingSchedule { data, len: 0 }

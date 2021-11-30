@@ -13,6 +13,7 @@ import {
 } from "@solana/web3.js";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, } from "@solana/spl-token";
 import { TokenInstructions } from "@project-serum/serum";
+const serumCmn = require("@project-serum/common");
 
 export const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = new PublicKey(
     "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
@@ -266,4 +267,9 @@ export function decimalToU64(n: number): number {
     let n1 = n * FACTOR;
     let n2 = Math.trunc(n1);
     return n2;
+}
+
+
+export async function getTokenAccount(provider:any, addr:any) {
+    return await serumCmn.getTokenAccount(provider, addr);
 }
