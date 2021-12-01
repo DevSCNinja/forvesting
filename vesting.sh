@@ -12,4 +12,4 @@ cp vesting_schedule-keypair.json ./target/deploy/
 yarn install
 make build
 make deploy-new
-npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts
+ANCHOR_WALLET=./keypair.json npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts
